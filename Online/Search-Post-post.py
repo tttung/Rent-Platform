@@ -9,7 +9,11 @@ url="http://106.12.83.14:6666/Search-Post"
 
 # 传入参数
 parms = {
-    'query': '经济'  # 发送给服务器的内容
+    'query': '经济',  # 发送给服务器的内容
+#    'address':'一号线 苹果园'，
+#    'rental':'2000',
+#    'filter':'限女生',
+#    'sort':'rental'
 }
 
 headers = {

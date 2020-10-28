@@ -38,6 +38,11 @@ class TodoList(Resource):
         
         # 构建新参数
         query = args['query']
+#        address = args['address']
+#        rental = args['rental']
+#        filter = args['filter']
+#        sort = args['sort']
+
 #        pwd = args['pwd']
         print('input query:%s' % query)
         # 调用方法semantic_search
