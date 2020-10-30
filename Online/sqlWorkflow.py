@@ -13,7 +13,10 @@ from urllib.request import urlopen
 class Workflow(object):
     def __init__(self):
         self.root = '/Users/tung/Documents/Git/Rent-Platform/On-line/'
-
+        self.conn = pymysql.connect(host = '106.12.83.14', user = 'ping', passwd = 'mima123456', port=3306,
+                                    charset='utf8', autocommit=True) #打开数据库连接，utf-8编码，否则中文有可能会出现乱码。
+        self.cursor = self.conn.cursor()                             #创建一个游标,用来给数据库发送sql语句
+    
     '每天更新新闻到数据库'
     def updateNewsDatabase(self):
         #获取新闻，添加入数据库13类*40个 = 520条新闻
@@ -37,38 +40,29 @@ class Workflow(object):
         result = jsonarr["result"]
         print(result["channel"],result["num"])
 
-        #打开数据库连接
-        conn = pymysql.connect(host = '106.12.83.14', user = 'ping', passwd = 'mima123456', port=3306,
-                               charset='utf8', autocommit=True) #utf-8编码，否则中文有可能会出现乱码。
-        #创建一个游标,用来给数据库发送sql语句
-        cursor=conn.cursor()
         #选择需要的数据库
-        conn.select_db('test1')
+        self.conn.select_db('test1')
         #数据库内增加新数据
         for val in result["list"]:
             sql= "insert into news(title,time,src,cat,pic,content,url,weburl) values (%s, %s, %s, %s, %s, %s, %s, %s)" #插入数据库
             #     content = re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+".encode('utf-8').decode('utf-8'), "".encode('utf-8').decode('utf-8'), val["content"])
             #     content = re.sub("[A-Za-z0-9\!\%\[\]\,\。]", "", content)
-            cursor.execute(sql,(val["title"],val["time"],val["src"],val["category"],val["pic"], val["content"], val["url"],val["weburl"]))
+            self.cursor.execute(sql,(val["title"],val["time"],val["src"],val["category"],val["pic"], val["content"], val["url"],val["weburl"]))
             print("标题:{0}时间:{1}".format(val["title"],val["time"]))
 
-        conn.close()#关闭数据库
+        self.conn.close()#关闭数据库
 
     '获取推荐候选集'
     def getNewsCandidate(self):
         #最新的520*3天=1560条新闻
-        #打开数据库连接
-        conn = pymysql.connect(host = '106.12.83.14', user = 'ping', passwd = 'mima123456', port=3306,
-                               charset='utf8', autocommit=True) #utf-8编码，否则中文有可能会出现乱码。
-        #创建一个游标,用来给数据库发送sql语句
-        cursor=conn.cursor()
+
         #选择需要的数据库
-        conn.select_db('test1')
+        self.conn.select_db('test1')
         # sql="select * from news where 1=1 limit 650"  #前13*50条
         sql="select * from news order by id desc limit 0,1560" #后13*80条
         try:
-            cursor.execute(sql)
-            candidate = cursor.fetchall() #获取全部结果集。 fetchone 查询第一条数据，返回tuple类型。
+            self.cursor.execute(sql)
+            candidate = self.cursor.fetchall() #获取全部结果集。 fetchone 查询第一条数据，返回tuple类型。
             if not candidate: #判断是否为空。
                 print("数据为空！")
             else:
@@ -85,10 +79,10 @@ class Workflow(object):
 #                    print("id:{0}标题:{1}时间:{2}来源:{3}标签:{4}图片:{5}内容:{6}url:{7}weburl:{8}".format(ID,title,time,src,cat,pic,content,url,weburl))
 
         except Exception as e:
-            conn.rollback()  #如果出错就会滚数据库并且输出错误信息
+            self.conn.rollback()  #如果出错就会滚数据库并且输出错误信息
             print("Error:{0}".format(e))
         finally:
-            conn.close()#关闭数据库
+            self.conn.close()#关闭数据库
 
         print( '获取候选新闻的数据量为：', len(candidate))
         cPickle.dump( candidate, open(self.root + 'candidate.pkl', 'wb')) #tuple对象持久化
@@ -112,23 +106,59 @@ class Workflow(object):
         candidate = cPickle.load( open(self.root + 'candidate.pkl','rb') ) #读入数据
         print('候选新闻样本：', candidate[20])
 
+    '按address rental filter sort过滤求租贴id'
+    def sqlFilter_postId(self, address=None, rental=None, filter=None, sort=None):
+        #选择需要的数据库
+        self.conn.select_db('rent')
+        # 对于数据库实现过滤查询操作
+        Filter_post="select * from post where address=" + address + "AND rental" + rental + "AND" + filter
+#        ORDER BY
+        postId = []
+        try:
+            self.cursor.execute(Filter_post)
+            row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
+            if not row: #判断是否为空。
+                print("数据为空！")
+            else:
+                res.setdefault('id', row[0])
+                res.setdefault('t_user_id', row[1])
+                res.setdefault('soliciting_type', row[2])
+                res.setdefault('title', row[3])
+                res.setdefault('update_time', str(row[4]))
+                res.setdefault('rental', row[5])
+                res.setdefault('gender_requirement', row[6])
+                res.setdefault('location', row[7])
+                res.setdefault('post_content', row[8])
+        
+            picture_url = ""
+            sql_picture="select * from picture where post_id="+str(res['id']) #按post_id查找图片
+            self.cursor.execute(sql_picture)
+            row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
+            if not row: #判断是否为空。
+                print("数据为空！")
+            else:
+                for i in row:
+                    picture_url += " "+i[1]     #多张图片的url拼接
+                res.setdefault('picture_url', picture_url)
+
+        except Exception as e:
+            self.conn.rollback()       #如果出错就会关数据库并且输出错误信息
+            print("Error:{0}".format(e))
+        finally:
+            self.conn.close()          #关闭数据库
+        return res
+
     '按id搜索房源(house_resource + picture + room_configuration)'
     def sqlSearch_room(self, search_id):
-        # 打开数据库连接
-        conn = pymysql.connect(host = '106.12.83.14', user = 'ping', passwd = 'mima123456', port=3306,charset='utf8', autocommit=True)
-        
-        # 创建一个游标,用来给数据库发送sql语句
-        cursor=conn.cursor()
-        
         #选择需要的数据库
-        conn.select_db('rent')
+        self.conn.select_db('rent')
         # 对于数据库实现增删改查操作
         sql_house="select * from house_resource where id=" + search_id  #按id查找
 
         res = {}
         try:
-            cursor.execute(sql_house)
-            row = cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
+            self.cursor.execute(sql_house)
+            row = self.cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                 print("数据为空！")
             else:
@@ -147,8 +177,8 @@ class Workflow(object):
             
             picture_url = ""
             sql_picture="select * from picture where house_resource_id="+str(res['id']) #按house_id查找图片
-            cursor.execute(sql_picture)
-            row = cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
+            self.cursor.execute(sql_picture)
+            row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                 print("数据为空！")
             else:
@@ -158,7 +188,7 @@ class Workflow(object):
 
             sql_config="select * from room_configuration where house_id="+str(res['id']) #按house_id查找房间配置
             cursor.execute(sql_config)
-            row = cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
+            row = self.cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                 print("数据为空！")
             else:
@@ -174,29 +204,23 @@ class Workflow(object):
                 res.setdefault('gas', row[11])
 
         except Exception as e:
-            conn.rollback()       #如果出错就会关数据库并且输出错误信息
+            self.conn.rollback()       #如果出错就会关数据库并且输出错误信息
             print("Error:{0}".format(e))
         finally:
-            conn.close()          #关闭数据库
+            self.conn.close()          #关闭数据库
         return res
 
     '按id搜索求租贴(post + picture)'
     def sqlSearch_post(self, search_id):
-        # 打开数据库连接
-        conn = pymysql.connect(host = '106.12.83.14', user = 'ping', passwd = 'mima123456', port=3306,charset='utf8', autocommit=True)
-        
-        # 创建一个游标,用来给数据库发送sql语句
-        cursor=conn.cursor()
-        
         #选择需要的数据库
-        conn.select_db('rent')
+        self.conn.select_db('rent')
         # 对于数据库实现增删改查操作
         sql_post="select * from post where id=" + search_id  #按id查找
         
         res = {}
         try:
-            cursor.execute(sql_post)
-            row = cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
+            self.cursor.execute(sql_post)
+            row = self.cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                 print("数据为空！")
             else:
@@ -212,8 +236,8 @@ class Workflow(object):
 
             picture_url = ""
             sql_picture="select * from picture where post_id="+str(res['id']) #按post_id查找图片
-            cursor.execute(sql_picture)
-            row = cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
+            self.cursor.execute(sql_picture)
+            row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                     print("数据为空！")
             else:
@@ -222,10 +246,10 @@ class Workflow(object):
                 res.setdefault('picture_url', picture_url)
 
         except Exception as e:
-            conn.rollback()       #如果出错就会关数据库并且输出错误信息
+            self.conn.rollback()       #如果出错就会关数据库并且输出错误信息
             print("Error:{0}".format(e))
         finally:
-            conn.close()          #关闭数据库
+            self.conn.close()          #关闭数据库
         return res
 
 if __name__ == '__main__':

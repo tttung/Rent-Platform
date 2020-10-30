@@ -24,9 +24,9 @@ class search(object):
         self.word_model = word2vec.Word2Vec.load('/Users/tung/Documents/Git/Rent-Platform/wordEmbedding/sougouCS_wordVec')
         self.vocab = self.word_model.wv.vocab.keys()
         
-        self.word_news_feature = cPickle.load( open(self.root + 'persistence/multi_news_word.pkl','rb') )   # 新闻词嵌入
-        self.word_news_feature_id = list(self.word_news_feature.keys())
-        self.word_news_feature_vec = np.array(list(self.word_news_feature.values())).astype('float32')
+        self.word_news_feature = cPickle.load( open(self.root + 'persistence/multi_news_word.pkl','rb') )   # 全量新闻词嵌入
+        self.word_news_feature_id = list(self.word_news_feature.keys())              # 全量新闻id
+        self.word_news_feature_vec = np.array(list(self.word_news_feature.values())).astype('float32')   # 全量新闻vec
     
     # 得到任意text的vector
     def get_vector(self, word_list):
@@ -39,16 +39,17 @@ class search(object):
                 count += 1
         return res/count if count >0 else res
 
-    def FlatL2(self, query):
-        # Query扩展
+    def FlatL2(self, query, examples):
+        # 扩展的Query
         tags = analyse.extract_tags(query,5)
         
         queryVec = self.get_vector(tags)
         queryVec = queryVec.reshape(1,128).astype('float32')
         
+        examples = self.word_news_feature_vec
         #相似度检索
         index = faiss.IndexFlatL2(self.dim)         # L2距离，欧式距离（越小越好）
-        index.add(self.word_news_feature_vec)  # 添加训练时的样本
+        index.add(examples)                         # 添加训练时的样本
         D, I = index.search(queryVec, self.k)       # 寻找相似向量， I表示相似向量ID矩阵， D表示距离矩阵
 
         res = []

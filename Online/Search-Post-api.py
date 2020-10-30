@@ -21,7 +21,7 @@ def Search_News(argv_):
     result = []
     workflow = Workflow()
     sear = search()
-    temp = sear.FlatL2(argv_)
+    temp = sear.FlatL2(argv_)      #传四个参数
 
     for news_id, ctr in temp:
         middle = workflow.sqlSearch_post(news_id)
@@ -35,13 +35,18 @@ class TodoList(Resource):
     
     def post(self):
         args = parser_put.parse_args()
-        
+
         # 构建新参数
         query = args['query']
+        address = args['address']
+        rental = args['rental']
+        filter = args['filter']
+        sort = args['sort']
+
 #        pwd = args['pwd']
         print('input query:%s' % query)
         # 调用方法semantic_search
-        info = Search_News(query)
+        info = Search_News(query, address, rental, filter, sort)
     
         # 资源添加成功，返回201
         return info, 201
