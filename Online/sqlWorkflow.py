@@ -108,9 +108,8 @@ class Workflow(object):
 
     '动态多条件location rental gender 过滤求租贴id，后sort'
     def sqlFilter_postId(self, location="", rental_min="", rental_max="", gender="", sort=""):
-        #选择需要的数据库
         self.conn.select_db('rent')
-        # 对于数据库实现过滤查询操作
+        
         filter_post = 'select * from post where (location like "%%{0}%%" or "{0}"="") and (rental between "{1}" and "{2}"  or "{1}"="" or "{2}"="") and (gender_requirement ="{3}" or "{3}"="")'.format(location, rental_min, rental_max, gender)
         if sort != "":
             filter_post = filter_post + "order by %s" %(sort)
@@ -124,9 +123,38 @@ class Workflow(object):
                 print("数据为空！")
             else:
                 for i in row:
-                    postId.append(i[0])     #多张图片的url拼接
+#                    print(i)
+                    postId.append(i[0])     #多个postId拼接
                 res.setdefault('postId', postId)
         
+        except Exception as e:
+            self.conn.rollback()       #如果出错就会关数据库并且输出错误信息
+            print("Error:{0}".format(e))
+        finally:
+            self.conn.close()          #关闭数据库
+        return res
+
+    '动态多条件location rental direction 过滤房源贴id，后sort'
+    def sqlFilter_roomId(self, location="", rental_min="", rental_max="", direction="", sort=""):
+        self.conn.select_db('rent')
+        
+        filter_room = 'select * from house_resource where (detail_address like "%%{0}%%" or "{0}"="") and (rental between "{1}" and "{2}"  or "{1}"="" or "{2}"="") and (direction ="{3}" or "{3}"="")'.format(location, rental_min, rental_max, direction)
+        if sort != "":
+            filter_room = filter_room + "order by %s" %(sort)
+    
+        roomId = []
+        res = {}
+        try:
+            self.cursor.execute(filter_room)
+            row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
+            if not row: #判断是否为空。
+                print("数据为空！")
+            else:
+                for i in row:
+                    print(i)
+                    roomId.append(i[0])     #多个postId拼接
+                res.setdefault('postId', roomId)
+
         except Exception as e:
             self.conn.rollback()       #如果出错就会关数据库并且输出错误信息
             print("Error:{0}".format(e))
@@ -247,7 +275,8 @@ if __name__ == '__main__':
 #    test.recall()
 #    res = test.sqlSearch_room('100656815')
 #    res = test.sqlSearch_post('100624617')
-    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental asc")
+#    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental asc")
+    res = test.sqlFilter_roomId(location="金鱼", rental_min="0",rental_max="5000", direction="朝南", sort="rental asc")
     print(res)
 
     print("This took ", datetime.now() - start)
