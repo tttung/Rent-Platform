@@ -12,7 +12,7 @@ from urllib.request import urlopen
 
 class Workflow(object):
     def __init__(self):
-        self.root = '/Users/tung/Documents/Git/Rent-Platform/On-line/'
+        self.root = '/Users/tung/Documents/Git/Rent-Platform/OnLine/'
         self.conn = pymysql.connect(host = '106.12.83.14', user = 'ping', passwd = 'mima123456', port=3306,
                                     charset='utf8', autocommit=True) #打开数据库连接，utf-8编码，否则中文有可能会出现乱码。
         self.cursor = self.conn.cursor()                             #创建一个游标,用来给数据库发送sql语句
@@ -86,7 +86,7 @@ class Workflow(object):
 
         print( '获取候选新闻的数据量为：', len(candidate))
         cPickle.dump( candidate, open(self.root + 'candidate.pkl', 'wb')) #tuple对象持久化
-    
+
     '用户冷启动'
     def userColdStart(self, user_id):
         #生成用户静态画像
@@ -106,41 +106,27 @@ class Workflow(object):
         candidate = cPickle.load( open(self.root + 'candidate.pkl','rb') ) #读入数据
         print('候选新闻样本：', candidate[20])
 
-    '按address rental filter sort过滤求租贴id'
-    def sqlFilter_postId(self, address=None, rental=None, filter=None, sort=None):
+    '动态多条件location rental gender 过滤求租贴id，后sort'
+    def sqlFilter_postId(self, location="", rental_min="", rental_max="", gender="", sort=""):
         #选择需要的数据库
         self.conn.select_db('rent')
         # 对于数据库实现过滤查询操作
-        Filter_post="select * from post where address=" + address + "AND rental" + rental + "AND" + filter
-#        ORDER BY
+        filter_post = 'select * from post where (location like "%%{0}%%" or "{0}"="") and (rental between "{1}" and "{2}"  or "{1}"="" or "{2}"="") and (gender_requirement ="{3}" or "{3}"="")'.format(location, rental_min, rental_max, gender)
+        if sort != "":
+            filter_post = filter_post + "order by %s" %(sort)
+
         postId = []
+        res = {}
         try:
-            self.cursor.execute(Filter_post)
-            row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
-            if not row: #判断是否为空。
-                print("数据为空！")
-            else:
-                res.setdefault('id', row[0])
-                res.setdefault('t_user_id', row[1])
-                res.setdefault('soliciting_type', row[2])
-                res.setdefault('title', row[3])
-                res.setdefault('update_time', str(row[4]))
-                res.setdefault('rental', row[5])
-                res.setdefault('gender_requirement', row[6])
-                res.setdefault('location', row[7])
-                res.setdefault('post_content', row[8])
-        
-            picture_url = ""
-            sql_picture="select * from picture where post_id="+str(res['id']) #按post_id查找图片
-            self.cursor.execute(sql_picture)
+            self.cursor.execute(filter_post)
             row = self.cursor.fetchall() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                 print("数据为空！")
             else:
                 for i in row:
-                    picture_url += " "+i[1]     #多张图片的url拼接
-                res.setdefault('picture_url', picture_url)
-
+                    postId.append(i[0])     #多张图片的url拼接
+                res.setdefault('postId', postId)
+        
         except Exception as e:
             self.conn.rollback()       #如果出错就会关数据库并且输出错误信息
             print("Error:{0}".format(e))
@@ -187,7 +173,7 @@ class Workflow(object):
                 res.setdefault('picture_url', picture_url)
 
             sql_config="select * from room_configuration where house_id="+str(res['id']) #按house_id查找房间配置
-            cursor.execute(sql_config)
+            self.cursor.execute(sql_config)
             row = self.cursor.fetchone() #fetchone 查询第一条数据，返回tuple类型
             if not row: #判断是否为空。
                 print("数据为空！")
@@ -260,7 +246,8 @@ if __name__ == '__main__':
 #    test.getNewsCandidate()
 #    test.recall()
 #    res = test.sqlSearch_room('100656815')
-    res = test.sqlSearch_post('100624617')
+#    res = test.sqlSearch_post('100624617')
+    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental asc")
     print(res)
 
     print("This took ", datetime.now() - start)
