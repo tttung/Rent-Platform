@@ -105,7 +105,8 @@ class Workflow(object):
         #[1]标题、[2]时间、[4]分类、[6]内容
         candidate = cPickle.load( open(self.root + 'candidate.pkl','rb') ) #读入数据
         print('候选新闻样本：', candidate[20])
-
+    
+    ##################################################################################################################
     '动态多条件location rental gender 过滤求租贴id，后sort'
     def sqlFilter_postId(self, location="", rental_min="", rental_max="", gender="", sort=""):
         self.conn.select_db('rent')
@@ -151,7 +152,7 @@ class Workflow(object):
                 print("数据为空！")
             else:
                 for i in row:
-                    print(i)
+#                    print(i)
                     roomId.append(i[0])     #多个postId拼接
                 res.setdefault('postId', roomId)
 
@@ -229,7 +230,7 @@ class Workflow(object):
         #选择需要的数据库
         self.conn.select_db('rent')
         # 对于数据库实现增删改查操作
-        sql_post="select * from post where id=" + search_id  #按id查找
+        sql_post="select * from post where id =" + search_id  #按id查找
         
         res = {}
         try:
@@ -275,9 +276,8 @@ if __name__ == '__main__':
 #    test.recall()
 #    res = test.sqlSearch_room('100656815')
 #    res = test.sqlSearch_post('100624617')
-#    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental asc")
-    res = test.sqlFilter_roomId(location="金鱼", rental_min="0",rental_max="5000", direction="朝南", sort="rental asc")
+    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental desc")
+#    res = test.sqlFilter_roomId(location="金鱼", rental_min="0",rental_max="5000", direction="朝南", sort="rental asc")
     print(res)
 
     print("This took ", datetime.now() - start)
-
