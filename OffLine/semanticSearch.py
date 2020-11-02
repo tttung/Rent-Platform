@@ -150,16 +150,20 @@ class search(object):
 if __name__ == '__main__':
     start = datetime.now()
     test = search()
-    
-    postId = {'postId': [100624617, 100649885, 100654809, 100655161, 100656239, 100656369, 100656610, 100656815, 100657188, 100657261]}
-    test.get_postRecall(postId)
-#    query = '经济'
+    #    query = '经济'
     query = sys.argv[1]
+    
+#    postId = {'postId': [100624617, 100649885, 100654809, 100655161, 100656239, 100656369, 100656610, 100656815, 100657188, 100657261]}
+#    test.get_postRecall(postId)
+#    result = test.post_FlatL2(query)
 
-    result = test.post_FlatL2(query)
+    roomId = {'roomId': [100624617, 100649885, 100654809, 100655161, 100656239, 100656369, 100656610, 100656815, 100657188, 100657261]}
+    test.get_roomRecall(roomId)
+    result = test.room_FlatL2(query)
+    
 ##    result = test.IVFFlat(query)
 ##    result = test.factory(query)
-#
+
     print('input query:%s' % query)
     for news_id, ctr in result:
         print('id:%s, ctr:%s' % (news_id, ctr))
