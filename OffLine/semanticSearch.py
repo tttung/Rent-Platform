@@ -16,19 +16,19 @@ jieba.setLogLevel(logging.INFO)
 class search(object):
     def __init__(self):
         self.dim = 128         # 向量维度
-        self.k = 5             # 召回向量个数
+        self.k = 5             # 排序TopK
         self.root='/Users/tung/Documents/Git/Rent-Platform/OffLine/'
-        self.newsSet = cPickle.load( open(self.root + 'persistence/newsSet_title.pkl','rb') )               # 新闻title字典
         
         '加载word2vec模型'
         self.word_model = word2vec.Word2Vec.load('/Users/tung/Documents/Git/Rent-Platform/wordEmbedding/sougouCS_wordVec')
         self.vocab = self.word_model.wv.vocab.keys()
-        
-        self.word_news_feature = cPickle.load( open(self.root + 'persistence/multi_news_word.pkl','rb') )   # 全量新闻词嵌入
-        self.word_news_feature_id = list(self.word_news_feature.keys())              # 全量新闻id
-        self.word_news_feature_vec = np.array(list(self.word_news_feature.values())).astype('float32')   # 全量新闻vec
-    
-    # 得到任意text的vector
+ 
+        self.post_recall_id = []               # 召回求租贴id
+        self.post_recall_vec = []              # 召回求租贴向量
+        self.room_recall_id = []               # 召回房源帖id
+        self.room_recall_vec = []              # 召回房源帖向量
+
+    "得到任意text的vector"
     def get_vector(self, word_list):
         # 建立一个全是0的array
         res =np.zeros([128])
@@ -38,32 +38,67 @@ class search(object):
                 res += self.word_model[word]
                 count += 1
         return res/count if count >0 else res
+        
+    "动态条件召回的求租帖向量"
+    def get_postRecall(self, postId):
+        self.post_recall_id = postId['postId']
+        word_news_feature = cPickle.load( open(self.root + 'persistence/multi_news_word.pkl','rb') )   # 全量新闻词嵌入
+        temp = []
+        for i in self.post_recall_id:
+            temp.append(word_news_feature[str(i)])  #int转一下str
+        self.post_recall_vec = np.array(temp).astype('float32')
 
-    def FlatL2(self, query, examples):
-        # 扩展的Query
-        tags = analyse.extract_tags(query,5)
+    def post_FlatL2(self, query):
+        # Query分词
+        tags = analyse.extract_tags(query,3)
         
         queryVec = self.get_vector(tags)
         queryVec = queryVec.reshape(1,128).astype('float32')
         
-        examples = self.word_news_feature_vec
         #相似度检索
         index = faiss.IndexFlatL2(self.dim)         # L2距离，欧式距离（越小越好）
-        index.add(examples)                         # 添加训练时的样本
+        index.add(self.post_recall_vec)             # 添加训练时的样本
         D, I = index.search(queryVec, self.k)       # 寻找相似向量， I表示相似向量ID矩阵， D表示距离矩阵
 
         res = []
         for idx, i in enumerate(I[0]):
-            news_id = self.word_news_feature_id[i]
-            #     res.append((news_id, newsSet[news_id]))    #返回title
+            post_id = self.post_recall_id[i]
             similarity = 1/math.log(1+D[0][idx])     #距离转相似度
-            res.append((news_id, similarity))        #返回相似度
+            res.append((post_id, similarity))        #返回相似度
+        return res
 
+    "动态条件召回的房源帖向量"
+    def get_roomRecall(self, roomId):
+        self.room_recall_id = roomId['roomId']
+        word_news_feature = cPickle.load( open(self.root + 'persistence/multi_news_word.pkl','rb') )   # 全量新闻词嵌入
+        temp = []
+        for i in self.room_recall_id:
+            temp.append(word_news_feature[str(i)])  #int转一下str
+            self.room_recall_vec = np.array(temp).astype('float32')
+    
+    def room_FlatL2(self, query):
+        # Query分词
+        tags = analyse.extract_tags(query,3)
+        
+        queryVec = self.get_vector(tags)
+        queryVec = queryVec.reshape(1,128).astype('float32')
+        
+        #相似度检索
+        index = faiss.IndexFlatL2(self.dim)         # L2距离，欧式距离（越小越好）
+        index.add(self.room_recall_vec)             # 添加训练时的样本
+        D, I = index.search(queryVec, self.k)       # 寻找相似向量， I表示相似向量ID矩阵， D表示距离矩阵
+        
+        res = []
+        for idx, i in enumerate(I[0]):
+            room_id = self.room_recall_id[i]
+            similarity = 1/math.log(1+D[0][idx])     #距离转相似度
+            res.append((room_id, similarity))        #返回相似度
         return res
     
+    "其它检索方法"
     def IVFFlat(self, query):
-        # Query扩展
-        tags = analyse.extract_tags(query,5)
+        # Query分词
+        tags = analyse.extract_tags(query,3)
         
         queryVec = self.get_vector(tags)
         queryVec = queryVec.reshape(1,128).astype('float32')
@@ -89,8 +124,8 @@ class search(object):
         return res
     
     def factory(self, query):
-        # Query扩展
-        tags = analyse.extract_tags(query,5)
+        # Query分词
+        tags = analyse.extract_tags(query,3)
         
         queryVec = self.get_vector(tags)
         queryVec = queryVec.reshape(1,128).astype('float32')
@@ -114,14 +149,17 @@ class search(object):
 
 if __name__ == '__main__':
     start = datetime.now()
+    test = search()
+    
+    postId = {'postId': [100624617, 100649885, 100654809, 100655161, 100656239, 100656369, 100656610, 100656815, 100657188, 100657261]}
+    test.get_postRecall(postId)
 #    query = '经济'
     query = sys.argv[1]
-    
-    test = search()
-    result = test.FlatL2(query)
-#    result = test.IVFFlat(query)
-#    result = test.factory(query)
 
+    result = test.post_FlatL2(query)
+##    result = test.IVFFlat(query)
+##    result = test.factory(query)
+#
     print('input query:%s' % query)
     for news_id, ctr in result:
         print('id:%s, ctr:%s' % (news_id, ctr))
