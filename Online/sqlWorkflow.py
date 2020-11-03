@@ -109,6 +109,7 @@ class Workflow(object):
     ##################################################################################################################
     '动态多条件location rental gender 过滤求租贴id，后sort'
     def sqlFilter_postId(self, location="", rental_min="", rental_max="", gender="", sort=""):
+        self.conn.ping(reconnect=True)
         self.conn.select_db('rent')
         
         filter_post = 'select * from post where (location like "%%{0}%%" or "{0}"="") and (rental between "{1}" and "{2}"  or "{1}"="" or "{2}"="") and (gender_requirement ="{3}" or "{3}"="")'.format(location, rental_min, rental_max, gender)
@@ -137,10 +138,12 @@ class Workflow(object):
 
     '按id搜索房源(house_resource + picture + room_configuration)'
     def sqlSearch_room(self, search_id):
+        #在每次运行sql前，ping一次，如果连接断开就重连
+        self.conn.ping(reconnect=True)
         #选择需要的数据库
         self.conn.select_db('rent')
         # 对于数据库实现增删改查操作
-        sql_house="select * from house_resource where id=" + search_id  #按id查找
+        sql_house="select * from house_resource where id=" + str(search_id)  #按id查找
 
         res = {}
         try:
@@ -199,6 +202,7 @@ class Workflow(object):
     
     '动态多条件location rental direction 过滤房源贴id，后sort'
     def sqlFilter_roomId(self, location="", rental_min="", rental_max="", direction="", sort=""):
+        self.conn.ping(reconnect=True)
         self.conn.select_db('rent')
         
         filter_room = 'select * from house_resource where (detail_address like "%%{0}%%" or "{0}"="") and (rental between "{1}" and "{2}"  or "{1}"="" or "{2}"="") and (direction ="{3}" or "{3}"="")'.format(location, rental_min, rental_max, direction)
@@ -227,10 +231,11 @@ class Workflow(object):
 
     '按id搜索求租贴(post + picture)'
     def sqlSearch_post(self, search_id):
+        self.conn.ping(reconnect=True)
         #选择需要的数据库
         self.conn.select_db('rent')
         # 对于数据库实现增删改查操作
-        sql_post="select * from post where id =" + search_id  #按id查找
+        sql_post="select * from post where id =" + str(search_id)  #按id查找
         
         res = {}
         try:
@@ -274,11 +279,11 @@ if __name__ == '__main__':
 #    test.updateNewsDatabase()
 #    test.getNewsCandidate()
 #    test.recall()
-#    res = test.sqlSearch_room('100656815')
+    res = test.sqlSearch_room('100656815')
 #    res = test.sqlSearch_post('100624617')
 #    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental desc")
 #    res = test.sqlFilter_roomId(location="金鱼", rental_min="0",rental_max="5000", direction="朝南", sort="rental asc")
-    res = test.sqlFilter_postId()
+#    res = test.sqlFilter_postId()
 #    res = test.sqlFilter_roomId()
 
     print(res)
