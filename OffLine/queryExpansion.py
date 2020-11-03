@@ -13,7 +13,7 @@ class queryExpan(object):
         self.root = '/Users/tung/Documents/Git/Rent-Platform/rentEmbedding/'
         '训练word2vec'
         self.Raw_corpora = self.root + "lianjia/"
-        self.train_file = self.root + "rent_corpus.txt"  #预处理的语料
+        self.train_file = self.root + "rent_corpus.txt"              #预处理的语料
         self.save_model_name = self.root + "rent_wordVec"
         self.chineseStopWords = self.root + "chineseStopWords.txt"
     
@@ -22,7 +22,7 @@ class queryExpan(object):
         self.vocab = self.word_model.wv.vocab.keys()
 
     # 预处理
-    ## 去停用词
+    "去停用词"
     def get_stop_words(self):
         path = self.chineseStopWords
         file = open(path, 'rb').read().decode('utf-8').split('\r\n')
@@ -41,13 +41,13 @@ class queryExpan(object):
                 word_list.pop(i)
         return word_list
 
-    ## 去低频词
+    "去低频词"
     def rm_word_freq_so_little(self, dictionary, freq_thred):
         small_freq_ids = [tokenid for tokenid, docfreq in dictionary.dfs.items() if docfreq < freq_thred ]
         dictionary.filter_tokens(small_freq_ids)
         dictionary.compactify()
 
-    ## 分词
+
     '''生成原始语料文件夹下文件列表'''
     def listdir(self, path, list_name):
         for file in os.listdir(path):
@@ -57,7 +57,8 @@ class queryExpan(object):
             else:
                 list_name.append(file_path)
         return list_name
-
+    
+    "分词"
     def generate_corpors(self):
         list_name = []
         list_name = self.listdir(self.Raw_corpora, list_name)
@@ -83,7 +84,7 @@ class queryExpan(object):
             f = open(file, 'a+', encoding='utf-8')
             f.write(''.join(dictionary[i]) +'\n')   #加\n换行显示
 
-    #  训练生成词向量
+    "训练生成词向量"
     def model_train(self, train_file_name, save_model_name):
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
         sentences = word2vec.Text8Corpus(train_file_name, max_sentence_length = 1000)  # 加载语料
@@ -99,7 +100,7 @@ class queryExpan(object):
         else:
             print('此训练模型已经存在，不用再次训练')
 
-    #  生成扩展词
+    "生成扩展词"
     def generate_expan(self, query):
         if query in self.vocab:     #（要在词典内）
             # 计算扩展词（相关词）列表

@@ -112,12 +112,11 @@ class search(object):
         index.train(self.word_news_feature_vec)    #需要训练
         assert index.is_trained
         index.add(self.word_news_feature_vec)      #添加训练时的样本
-        D, I = index.search(queryVec, self.k)           #寻找相似向量， I表示相似用户ID矩阵， D表示距离矩阵
+        D, I = index.search(queryVec, self.k)      #寻找相似向量， I表示相似用户ID矩阵， D表示距离矩阵
         
         res = []
         for idx, i in enumerate(I[0]):
             news_id = self.word_news_feature_id[i]
-            #     res.append((news_id, newsSet[news_id]))    #返回title
             similarity = 1/math.log(1+D[0][idx])     #距离转相似度
             res.append((news_id, similarity))        #返回相似度
         
@@ -141,7 +140,6 @@ class search(object):
         res = []
         for idx, i in enumerate(I[0]):
             news_id = self.word_news_feature_id[i]
-            #     res.append((news_id, newsSet[news_id]))    #返回title
             similarity = 1/math.log(1+D[0][idx])     #距离转相似度
             res.append((news_id, similarity))        #返回相似度
         

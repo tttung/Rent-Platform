@@ -26,6 +26,8 @@ def Search_Post(query, location, rental_min, rental_max, gender, sort):
     result = []
     workflow = Workflow()
     postId = workflow.sqlFilter_postId(location, rental_min, rental_max, gender, sort)   #获取post id
+    if not postId:
+        return "数据为空！"
     
     sear = search()
     sear.get_postRecall(postId)         #召回向量

@@ -27,7 +27,9 @@ def Search_News(query, location, rental_min, rental_max, direction, sort):
     result = []
     workflow = Workflow()
     roomId = workflow.sqlFilter_roomId(location, rental_min, rental_max, direction, sort)   #获取room id
-
+    if not roomId:
+        return "数据为空！"
+    
     sear = search()
     sear.get_roomRecall(roomId)         #召回向量
     temp = sear.room_FlatL2(query)      #query排序TopK
