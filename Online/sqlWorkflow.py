@@ -40,7 +40,7 @@ class Workflow(object):
         result = jsonarr["result"]
         print(result["channel"],result["num"])
 
-        #选择需要的数据库
+        self.conn.ping(reconnect=True)
         self.conn.select_db('test1')
         #数据库内增加新数据
         for val in result["list"]:
@@ -54,10 +54,10 @@ class Workflow(object):
 
     '获取推荐候选集'
     def getNewsCandidate(self):
-        #最新的520*3天=1560条新闻
-
-        #选择需要的数据库
+        self.conn.ping(reconnect=True)
         self.conn.select_db('test1')
+        
+        #最新的520*3天=1560条新闻
         # sql="select * from news where 1=1 limit 650"  #前13*50条
         sql="select * from news order by id desc limit 0,1560" #后13*80条
         try:
@@ -106,7 +106,7 @@ class Workflow(object):
         candidate = cPickle.load( open(self.root + 'candidate.pkl','rb') ) #读入数据
         print('候选新闻样本：', candidate[20])
     
-    ##################################################################################################################
+    #########################################################################################
     '动态多条件location rental gender 过滤求租贴id，后sort'
     def sqlFilter_postId(self, location="", rental_min="", rental_max="", gender="", sort=""):
         self.conn.ping(reconnect=True)
@@ -138,11 +138,9 @@ class Workflow(object):
 
     '按id搜索房源(house_resource + picture + room_configuration)'
     def sqlSearch_room(self, search_id):
-        #在每次运行sql前，ping一次，如果连接断开就重连
         self.conn.ping(reconnect=True)
-        #选择需要的数据库
         self.conn.select_db('rent')
-        # 对于数据库实现增删改查操作
+
         sql_house="select * from house_resource where id=" + str(search_id)  #按id查找
 
         res = {}
@@ -279,9 +277,9 @@ if __name__ == '__main__':
 #    test.updateNewsDatabase()
 #    test.getNewsCandidate()
 #    test.recall()
-    res = test.sqlSearch_room('100656815')
+#    res = test.sqlSearch_room('100656815')
 #    res = test.sqlSearch_post('100624617')
-#    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental desc")
+    res = test.sqlFilter_postId(location="海淀", rental_min="0",rental_max="5000", gender="限女生", sort="rental desc")
 #    res = test.sqlFilter_roomId(location="金鱼", rental_min="0",rental_max="5000", direction="朝南", sort="rental asc")
 #    res = test.sqlFilter_postId()
 #    res = test.sqlFilter_roomId()

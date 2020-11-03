@@ -14,20 +14,28 @@ api = Api(app)
 # RESTfulAPI的参数解析 -- put / post参数解析
 parser_put = reqparse.RequestParser()
 parser_put.add_argument("query", type=str, required=True, help="need user data")
+parser_put.add_argument("location", type=str, required=True, help="need user data")
+parser_put.add_argument("rental_min", type=str, required=True, help="need user data")
+parser_put.add_argument("rental_max", type=str, required=True, help="need user data")
+parser_put.add_argument("direction", type=str, required=True, help="need user data")
+parser_put.add_argument("sort", type=str, required=True, help="need user data")
+
 #parser_put.add_argument("pwd", type=str, required=True, help="need pwd data")
 
 # 功能方法
-def Search_News(argv_):
+def Search_News(query, location, rental_min, rental_max, direction, sort):
     result = []
     workflow = Workflow()
-    sear = search()
-    temp = sear.FlatL2(argv_)
+    roomId = workflow.sqlFilter_roomId(location, rental_min, rental_max, direction, sort)   #获取room id
 
-    for news_id, ctr in temp:
-        middle = workflow.sqlSearch_room(news_id)
+    sear = search()
+    sear.get_roomRecall(roomId)         #召回向量
+    temp = sear.room_FlatL2(query)      #query排序TopK
+
+    for room_id, ctr in temp:
+        middle = workflow.sqlSearch_room(room_id)
         middle.setdefault('ctr', round(ctr,4))
         result.append(middle)
-    
     return result
 
 # 操作（post / get）资源列表
@@ -38,15 +46,16 @@ class TodoList(Resource):
         
         # 构建新参数
         query = args['query']
-#        address = args['address']
-#        rental = args['rental']
-#        filter = args['filter']
-#        sort = args['sort']
-
+        location = args['location']
+        rental_min = args['rental_min']
+        rental_max = args['rental_max']
+        direction = args['direction']
+        sort = args['sort']
 #        pwd = args['pwd']
+
         print('input query:%s' % query)
         # 调用方法semantic_search
-        info = Search_News(query)
+        info = Search_News(query, location, rental_min, rental_max, direction, sort)
     
         # 资源添加成功，返回201
         return info, 201

@@ -25,7 +25,7 @@ parser_put.add_argument("sort", type=str, required=True, help="need user data")
 def Search_Post(query, location, rental_min, rental_max, gender, sort):
     result = []
     workflow = Workflow()
-    postId = workflow.sqlFilter_postId(location, rental_min, rental_max, gender, sort)   #post id
+    postId = workflow.sqlFilter_postId(location, rental_min, rental_max, gender, sort)   #获取post id
     
     sear = search()
     sear.get_postRecall(postId)         #召回向量

@@ -10,16 +10,16 @@ url="http://0.0.0.0:6666/Search-Post"
 # 传入参数
 parms = {
     'query':'经济',
-#    'location':'海淀',
-#    'rental_min':'0',
-#    'rental_max':'5000',
-#    'gender':'限女生',
-#    'sort':'rental desc'
-    'location':'',
-    'rental_min':'',
-    'rental_max':'',
-    'gender':'',
-    'sort':''
+    'location':'海淀',
+    'rental_min':'0',
+    'rental_max':'5000',
+    'gender':'限女生',
+    'sort':'rental desc'
+#    'location':'',
+#    'rental_min':'',
+#    'rental_max':'',
+#    'gender':'',
+#    'sort':''
 }
 
 headers = {

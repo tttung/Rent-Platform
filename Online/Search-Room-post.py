@@ -4,17 +4,22 @@ import requests
 import json
 
 # api路径
-#url="http://0.0.0.0:7777/Search-Room"
-url="http://106.12.83.14:7777/Search-Room"
+url="http://0.0.0.0:7777/Search-Room"
+#url="http://106.12.83.14:7777/Search-Room"
 
 # 传入参数
 parms = {
-    'query': '经济',  # 发送给服务器的内容
-#    'address':'一号线 苹果园'，
-#    'rental':'2000',
-#    'filter':'限女生',
-
-#    'sort':'rental'
+    'query':'经济',
+    'location':'金鱼',
+    'rental_min':'0',
+    'rental_max':'5000',
+    'direction':'朝南',
+    'sort':'rental asc'
+#    'location':'',
+#    'rental_min':'',
+#    'rental_max':'',
+#    'direction':'',
+#    'sort':''
 }
 
 headers = {
